@@ -23,7 +23,8 @@ import Card from './ui/card.vue';
 import CardContent from './ui/card-content.vue';
 import CardHeader from './ui/card-header.vue';
 import CardTitle from './ui/card-title.vue';
-import { Clock, Calendar, TrendingUp, Target } from 'lucide-vue-next';
+import { Clock, Calendar } from 'lucide-vue-next';
+// import { TrendingUp } from 'lucide-vue-next';
 import { apiService } from '../services/api.js';
 
 export default {
@@ -34,9 +35,8 @@ export default {
     CardHeader,
     CardTitle,
     Clock,
-    Calendar,
-    TrendingUp,
-    Target
+    Calendar
+    // TrendingUp
   },
   props: {
     userId: {
@@ -148,12 +148,9 @@ export default {
       }, 0);
 
       // Calculate productivity based on working hours vs expected hours
-      const expectedDailyHours = 8;
-      const expectedWeeklyHours = 40;
-      const productivity = weekHours > 0 ? Math.min(100, Math.round((weekHours / expectedWeeklyHours) * 100)) : 0;
-      
-      // Calculate goals met (simplified - based on hours worked)
-      const goalsMet = Math.min(10, Math.floor(weekHours / 4)); // 1 goal per 4 hours worked
+      // const expectedDailyHours = 8;
+      // const expectedWeeklyHours = 40;
+      // const productivity = weekHours > 0 ? Math.min(100, Math.round((weekHours / expectedWeeklyHours) * 100)) : 0;
 
       return [
         {
@@ -169,21 +166,14 @@ export default {
           change: weekHours > 40 ? `+${(weekHours - 40).toFixed(1)}h` : `${(weekHours - 40).toFixed(1)}h`,
           icon: Calendar,
           color: 'text-green-500'
-        },
-        {
-          title: 'Productivity',
-          value: `${productivity}%`,
-          change: productivity > 100 ? `+${productivity - 100}%` : `${productivity - 100}%`,
-          icon: TrendingUp,
-          color: 'text-purple-500'
-        },
-        {
-          title: 'Goals Met',
-          value: `${goalsMet}/10`,
-          change: goalsMet > 8 ? `+${goalsMet - 8}` : `${goalsMet - 8}`,
-          icon: Target,
-          color: 'text-orange-500'
         }
+        // {
+        //   title: 'Productivity',
+        //   value: `${productivity}%`,
+        //   change: productivity > 100 ? `+${productivity - 100}%` : `${productivity - 100}%`,
+        //   icon: TrendingUp,
+        //   color: 'text-purple-500'
+        // }
       ];
     });
 

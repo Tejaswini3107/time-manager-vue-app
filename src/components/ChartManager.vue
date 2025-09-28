@@ -113,7 +113,6 @@ import {
   ArcElement,
   DoughnutController,
   RadialLinearScale,
-  RadarController
 } from 'chart.js';
 import { apiService } from '../services/api.js';
 import Card from './ui/card.vue';
@@ -140,7 +139,6 @@ ChartJS.register(
   ArcElement,
   DoughnutController,
   RadialLinearScale,
-  RadarController
 );
 
 export default {
@@ -176,8 +174,7 @@ export default {
     const chartTypes = ref([
       { label: 'Bar Chart', value: 'bar' },
       { label: 'Line Chart', value: 'line' },
-      { label: 'Pie Chart', value: 'pie' },
-      { label: 'Radar Chart', value: 'radar' }
+      { label: 'Pie Chart', value: 'pie' }
     ]);
     
     // Current date and time
@@ -218,6 +215,7 @@ export default {
           apiService.getClocks(props.userId)
         ]);
         
+        
         workingTimes.value = Array.isArray(workingTimesData) ? workingTimesData : [];
         clocks.value = Array.isArray(clocksData) ? clocksData : [];
       } catch (err) {
@@ -227,6 +225,7 @@ export default {
     
     // Working hours data for different time ranges
     const workingHoursData = computed(() => {
+      
       if (selectedTimeRange.value === 'week') {
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const weekData = days.map(day => ({ day, hours: 0 }));
@@ -239,6 +238,7 @@ export default {
           const hours = (end - start) / (1000 * 60 * 60);
           weekData[dayOfWeek].hours += hours;
         });
+        
         
         // Return empty data if no working times
         if (workingTimes.value.length === 0) {
@@ -333,37 +333,6 @@ export default {
       }
     });
 
-    // Radar chart data (performance metrics) - calculated from API data
-    const radarChartData = computed(() => {
-      const totalHours = workingHoursData.value.reduce((sum, item) => sum + item.hours, 0);
-      const workingDays = workingHoursData.value.filter(day => day.hours > 0).length;
-      const expectedDays = selectedTimeRange.value === 'week' ? 5 : 20; // 5 days per week, 20 days per month
-      const expectedHours = selectedTimeRange.value === 'week' ? 40 : 160; // 40 hours per week, 160 hours per month
-      
-      // Calculate metrics based on actual data
-      const punctuality = workingDays > 0 ? Math.min(100, Math.round((workingDays / expectedDays) * 100)) : 0;
-      const productivity = totalHours > 0 ? Math.min(100, Math.round((totalHours / expectedHours) * 100)) : 0;
-      const consistency = workingDays > 0 ? Math.min(100, Math.round((workingDays / expectedDays) * 100)) : 0;
-      const overtime = totalHours > expectedHours ? Math.min(100, Math.round(((totalHours - expectedHours) / expectedHours) * 100)) : 0;
-      const breakCompliance = workingDays > 0 ? Math.min(100, Math.round((workingDays / expectedDays) * 100)) : 0;
-      
-      return {
-        labels: ['Punctuality', 'Productivity', 'Consistency', 'Overtime', 'Break Compliance'],
-        datasets: [{
-          label: 'Performance Metrics',
-          data: [punctuality, productivity, consistency, overtime, breakCompliance],
-          backgroundColor: 'rgba(59, 130, 246, 0.2)',
-          borderColor: 'rgba(59, 130, 246, 1)',
-          borderWidth: 2,
-          pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-          pointBorderColor: '#fff',
-          pointHoverBackgroundColor: '#fff',
-          pointHoverBorderColor: 'rgba(59, 130, 246, 1)',
-          pointRadius: 4,
-          pointHoverRadius: 6
-        }]
-      };
-    });
     
     // Computed statistics
     const totalHours = computed(() => {
@@ -396,6 +365,7 @@ export default {
 
     const createBarChart = () => {
       if (!workingHoursChart.value) return;
+      
       
       // Destroy existing chart
       if (currentChart) {
@@ -641,80 +611,6 @@ export default {
       });
     };
 
-    const createRadarChart = () => {
-      if (!workingHoursChart.value) return;
-      
-      // Destroy existing chart
-      if (currentChart) {
-        currentChart.destroy();
-      }
-
-      const ctx = workingHoursChart.value.getContext('2d');
-      
-      // Check if we have data
-      const totalHours = workingHoursData.value.reduce((sum, item) => sum + item.hours, 0);
-      if (totalHours === 0) {
-        // Show "No Data" message
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('No data available', workingHoursChart.value.width / 2, workingHoursChart.value.height / 2);
-        return;
-      }
-
-      currentChart = new ChartJS(ctx, {
-        type: 'radar',
-        data: radarChartData.value,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            },
-            tooltip: {
-              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-              titleColor: 'white',
-              bodyColor: 'white',
-              borderColor: 'rgba(59, 130, 246, 1)',
-              borderWidth: 1,
-              callbacks: {
-                label: function(context) {
-                  return context.dataset.label + ': ' + context.parsed.r + '%';
-                }
-              }
-            }
-          },
-          scales: {
-            r: {
-              beginAtZero: true,
-              max: 100,
-              min: 0,
-              ticks: {
-                stepSize: 25,
-                color: 'rgba(0, 0, 0, 0.7)',
-                font: {
-                  size: 10
-                }
-              },
-              grid: {
-                color: 'rgba(0, 0, 0, 0.1)'
-              },
-              angleLines: {
-                color: 'rgba(0, 0, 0, 0.1)'
-              },
-              pointLabels: {
-                color: 'rgba(0, 0, 0, 0.7)',
-                font: {
-                  size: 12,
-                  weight: 'bold'
-                }
-              }
-            }
-          }
-        }
-      });
-    };
 
     const createChart = () => {
       switch (selectedChartType.value) {
@@ -723,9 +619,6 @@ export default {
           break;
         case 'pie':
           createPieChart();
-          break;
-        case 'radar':
-          createRadarChart();
           break;
         case 'bar':
         default:
@@ -745,6 +638,13 @@ export default {
       createChart();
     });
 
+    // Watch for changes in working hours data
+    watch(workingHoursData, (newData) => {
+      nextTick(() => {
+        createChart();
+      });
+    }, { deep: true });
+
     onMounted(async () => {
       await nextTick();
       createChart();
@@ -760,7 +660,6 @@ export default {
       workingHoursData,
       lineChartData,
       pieChartData,
-      radarChartData,
       totalHours,
       overtimeHours,
       averageHours,

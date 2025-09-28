@@ -7,13 +7,13 @@
         </div>
         <div>
           <CardTitle class="text-lg">{{ currentUser.username || 'Loading...' }}</CardTitle>
-          <p class="text-sm text-muted-foreground">User</p>
+          <p class="text-sm text-muted-foreground">General Manager</p>
         </div>
       </div>
       <div class="flex space-x-2">
-        <Button variant="outline" size="sm" @click="isEditOpen = true">
+        <!-- <Button variant="outline" size="sm" @click="isEditOpen = true">
           <Edit class="h-4 w-4" />
-        </Button>
+        </Button> -->
         <Button 
           variant="outline" 
           size="sm" 
@@ -25,9 +25,42 @@
       </div>
     </CardHeader>
     <CardContent>
-      <div class="text-sm text-muted-foreground">
-        <p>Email: {{ currentUser.email || 'Loading...' }}</p>
-        <p>User ID: {{ currentUser.id || 'Loading...' }}</p>
+      <div class="space-y-4">
+        <!-- Email Display -->
+        <div class="space-y-2">
+          <Label class="text-sm font-medium text-muted-foreground flex items-center">
+            📧 Email Address
+          </Label>
+          <div class="relative">
+            <Input
+              :value="currentUser.email || 'Loading...'"
+              readonly
+              class="bg-muted/50 border-muted-foreground/20 text-foreground font-mono text-sm cursor-not-allowed opacity-80 hover:opacity-100 transition-opacity"
+              :class="{ 'animate-pulse': !currentUser.email }"
+            />
+            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User ID Display -->
+        <div class="space-y-2">
+          <Label class="text-sm font-medium text-muted-foreground flex items-center">
+            🆔 User ID
+          </Label>
+          <div class="relative">
+            <Input
+              :value="currentUser.id || 'Loading...'"
+              readonly
+              class="bg-muted/50 border-muted-foreground/20 text-foreground font-mono text-sm cursor-not-allowed opacity-80 hover:opacity-100 transition-opacity"
+              :class="{ 'animate-pulse': !currentUser.id }"
+            />
+            <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </CardContent>
 

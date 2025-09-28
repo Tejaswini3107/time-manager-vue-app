@@ -35,24 +35,33 @@
           </div>
         </div>
 
-        <div class="mt-auto pt-4">
-          <div class="p-3 rounded-lg bg-sidebar-accent/50">
-            <div class="flex items-center space-x-2">
-              <div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
-                <UserIcon class="h-4 w-4 text-primary-foreground" />
+        <!-- <div class="mt-auto pt-4">
+          <div class="p-4 rounded-xl bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 border border-white/10 backdrop-blur-sm shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center shadow-lg ring-2 ring-white/20">
+                <UserIcon class="h-5 w-5 text-white" />
               </div>
               <div v-if="sidebarOpen" class="flex-1 min-w-0">
-                <p class="text-sm font-medium truncate">{{ currentUser.username }}</p>
-                <p class="text-xs text-muted-foreground truncate">User</p>
+                <p class="text-sm font-bold text-white truncate">{{ currentUser.username }}</p>
+                <p class="text-xs text-blue-200 truncate font-medium">👤 General Manager</p>
               </div>
             </div>
-            <div v-if="sidebarOpen" class="mt-2 space-y-2">
-              <Badge variant="secondary" class="text-xs">
-                ID: {{ currentUser.id }}
-              </Badge>
+            <div v-if="sidebarOpen" class="mt-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <Badge variant="secondary" class="text-xs bg-white/20 text-white border-white/30 hover:bg-white/30 transition-colors">
+                  🆔 ID: {{ currentUser.id }}
+                </Badge>
+                <div class="flex items-center space-x-1">
+                  <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                  <span class="text-xs text-green-300 font-medium">Online</span>
+                </div>
+              </div>
+              <div class="text-xs text-blue-200/80">
+                📧 {{ currentUser.email }}
+              </div>
             </div>
           </div>
-        </div>
+        </div> -->
       </div>
     </div>
 

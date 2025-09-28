@@ -31,7 +31,7 @@
 </template>
 
 <script>
-import { ref, onMounted, nextTick, computed } from 'vue';
+import { ref, onMounted, nextTick, computed, watch } from 'vue';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -97,19 +97,15 @@ export default {
       try {
         loading.value = true;
         
-        // Get current week data
-        const startOfWeek = new Date();
-        startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
+        // Get broader date range for better data coverage
+        const startOfMonth = new Date();
+        startOfMonth.setDate(startOfMonth.getDate() - 35); // Get last 5 weeks of data
         const endOfWeek = new Date();
         endOfWeek.setDate(endOfWeek.getDate() - endOfWeek.getDay() + 6);
         
-        // Get current month data (last 4 weeks)
-        const startOfMonth = new Date();
-        startOfMonth.setDate(startOfMonth.getDate() - 28);
-        
         const [workingTimesData, clocksData] = await Promise.all([
           apiService.getWorkingTimes(props.userId, {
-            start: startOfWeek.toISOString(),
+            start: startOfMonth.toISOString(),
             end: endOfWeek.toISOString()
           }),
           apiService.getClocks(props.userId)
@@ -117,6 +113,16 @@ export default {
         
         workingTimes.value = Array.isArray(workingTimesData) ? workingTimesData : [];
         clocks.value = Array.isArray(clocksData) ? clocksData : [];
+        
+        // Create charts after data is loaded
+        await nextTick();
+        console.log('Creating charts with data:', {
+          workingTimes: workingTimes.value.length,
+          weeklyData: weeklyData.value,
+          monthlyData: monthlyData.value
+        });
+        createWeeklyChart();
+        createMonthlyChart();
       } catch (err) {
         console.error('Failed to fetch chart data:', err);
         workingTimes.value = [];
@@ -126,12 +132,28 @@ export default {
       }
     });
 
-    // Calculate weekly data from API
+    // Calculate weekly data from API (current week only)
     const weeklyData = computed(() => {
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
       const weekData = days.map(day => ({ day, hours: 0 }));
       
-      workingTimes.value.forEach(wt => {
+      // Get current week boundaries
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+      
+      // Filter working times for current week only
+      const currentWeekTimes = workingTimes.value.filter(wt => {
+        const wtDate = new Date(wt.start);
+        return wtDate >= startOfWeek && wtDate <= endOfWeek;
+      });
+      
+      currentWeekTimes.forEach(wt => {
         const date = new Date(wt.start);
         const dayOfWeek = date.getDay();
         const start = new Date(wt.start);
@@ -177,19 +199,26 @@ export default {
     const createWeeklyChart = () => {
       if (!weeklyChart.value) return;
 
+      // Destroy existing chart if it exists
+      if (weeklyChart.value.chart) {
+        weeklyChart.value.chart.destroy();
+      }
+
       const ctx = weeklyChart.value.getContext('2d');
-      new ChartJS(ctx, {
+      weeklyChart.value.chart = new ChartJS(ctx, {
         type: 'bar',
         data: {
           labels: weeklyData.value.map(item => item.day),
           datasets: [{
             label: 'Hours Worked',
             data: weeklyData.value.map(item => item.hours),
-            backgroundColor: 'rgba(59, 130, 246, 0.8)',
+            backgroundColor: 'rgba(59, 130, 246, 0.9)',
             borderColor: 'rgba(59, 130, 246, 1)',
-            borderWidth: 1,
-            borderRadius: 4,
+            borderWidth: 0,
+            borderRadius: 6,
             borderSkipped: false,
+            barThickness: 24,
+            maxBarThickness: 32,
           }]
         },
         options: {
@@ -204,29 +233,87 @@ export default {
               titleColor: 'white',
               bodyColor: 'white',
               borderColor: 'rgba(59, 130, 246, 1)',
-              borderWidth: 1
+              borderWidth: 1,
+              titleFont: {
+                size: 12
+              },
+              bodyFont: {
+                size: 11
+              },
+              padding: 8,
+              cornerRadius: 6,
+              displayColors: false,
+              callbacks: {
+                title: function(context) {
+                  return context[0].label;
+                },
+                label: function(context) {
+                  const hours = context.parsed.y;
+                  return `${hours.toFixed(1)} hours`;
+                }
+              }
             }
           },
           scales: {
             y: {
               beginAtZero: true,
-              max: 10,
+              max: 12,
+              title: {
+                display: true,
+                text: '⏰ Hours Worked',
+                color: '#8B5CF6',
+                font: {
+                  size: 16,
+                  weight: 'bold',
+                  family: 'Inter, system-ui, sans-serif'
+                },
+                padding: { bottom: 25 }
+              },
               grid: {
-                color: 'rgba(255, 255, 255, 0.1)'
+                color: 'rgba(255, 255, 255, 0.1)',
+                drawBorder: false
               },
               ticks: {
-                color: 'rgba(255, 255, 255, 0.7)',
+                color: '#A78BFA',
+                font: {
+                  size: 14,
+                  weight: '600',
+                  family: 'Inter, system-ui, sans-serif'
+                },
+                stepSize: 3,
+                maxTicksLimit: 5,
                 callback: function(value) {
                   return value + 'h';
                 }
               }
             },
             x: {
+              title: {
+                display: true,
+                text: '📅 Days of the Week',
+                color: '#60A5FA',
+                font: {
+                  size: 18,
+                  weight: 'bold',
+                  family: 'Inter, system-ui, sans-serif'
+                },
+                padding: { top: 30 }
+              },
               grid: {
                 display: false
               },
               ticks: {
-                color: 'rgba(255, 255, 255, 0.7)'
+                color: '#FBBF24',
+                font: {
+                  size: 18,
+                  weight: 'bold',
+                  family: 'Inter, system-ui, sans-serif'
+                },
+                maxRotation: 0,
+                minRotation: 0,
+                padding: 15,
+                backdropColor: 'rgba(0, 0, 0, 0.3)',
+                backdropPadding: 4
               }
             }
           }
@@ -237,8 +324,13 @@ export default {
     const createMonthlyChart = () => {
       if (!monthlyChart.value) return;
 
+      // Destroy existing chart if it exists
+      if (monthlyChart.value.chart) {
+        monthlyChart.value.chart.destroy();
+      }
+
       const ctx = monthlyChart.value.getContext('2d');
-      new ChartJS(ctx, {
+      monthlyChart.value.chart = new ChartJS(ctx, {
         type: 'line',
         data: {
           labels: monthlyData.value.map(item => item.week),
@@ -270,29 +362,87 @@ export default {
               titleColor: 'white',
               bodyColor: 'white',
               borderColor: 'rgba(34, 197, 94, 1)',
-              borderWidth: 1
+              borderWidth: 1,
+              titleFont: {
+                size: 12
+              },
+              bodyFont: {
+                size: 11
+              },
+              padding: 8,
+              cornerRadius: 6,
+              displayColors: false,
+              callbacks: {
+                title: function(context) {
+                  return 'Week ' + context[0].label;
+                },
+                label: function(context) {
+                  const hours = context.parsed.y;
+                  return `${hours.toFixed(1)} hours`;
+                }
+              }
             }
           },
           scales: {
             y: {
               beginAtZero: true,
               max: 50,
+              title: {
+                display: true,
+                text: '📈 Weekly Hours',
+                color: '#EC4899',
+                font: {
+                  size: 16,
+                  weight: 'bold',
+                  family: 'Inter, system-ui, sans-serif'
+                },
+                padding: { bottom: 25 }
+              },
               grid: {
-                color: 'rgba(255, 255, 255, 0.1)'
+                color: 'rgba(255, 255, 255, 0.1)',
+                drawBorder: false
               },
               ticks: {
-                color: 'rgba(255, 255, 255, 0.7)',
+                color: '#F472B6',
+                font: {
+                  size: 14,
+                  weight: '600',
+                  family: 'Inter, system-ui, sans-serif'
+                },
+                stepSize: 10,
+                maxTicksLimit: 6,
                 callback: function(value) {
                   return value + 'h';
                 }
               }
             },
             x: {
+              title: {
+                display: true,
+                text: '📊 Weekly Progress',
+                color: '#10B981',
+                font: {
+                  size: 18,
+                  weight: 'bold',
+                  family: 'Inter, system-ui, sans-serif'
+                },
+                padding: { top: 30 }
+              },
               grid: {
                 display: false
               },
               ticks: {
-                color: 'rgba(255, 255, 255, 0.7)'
+                color: '#F59E0B',
+                font: {
+                  size: 18,
+                  weight: 'bold',
+                  family: 'Inter, system-ui, sans-serif'
+                },
+                maxRotation: 0,
+                minRotation: 0,
+                padding: 15,
+                backdropColor: 'rgba(0, 0, 0, 0.3)',
+                backdropPadding: 4
               }
             }
           }
@@ -300,11 +450,22 @@ export default {
       });
     };
 
-    onMounted(async () => {
-      await nextTick();
-      createWeeklyChart();
-      createMonthlyChart();
-    });
+    // Watch for data changes and update charts
+    watch(weeklyData, () => {
+      if (weeklyChart.value && weeklyChart.value.chart) {
+        weeklyChart.value.chart.data.labels = weeklyData.value.map(item => item.day);
+        weeklyChart.value.chart.data.datasets[0].data = weeklyData.value.map(item => item.hours);
+        weeklyChart.value.chart.update();
+      }
+    }, { deep: true });
+
+    watch(monthlyData, () => {
+      if (monthlyChart.value && monthlyChart.value.chart) {
+        monthlyChart.value.chart.data.labels = monthlyData.value.map(item => item.week);
+        monthlyChart.value.chart.data.datasets[0].data = monthlyData.value.map(item => item.hours);
+        monthlyChart.value.chart.update();
+      }
+    }, { deep: true });
 
     return {
       weeklyChart,

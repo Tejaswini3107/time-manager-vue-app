@@ -32,12 +32,31 @@ class ApiService {
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
-      const responseData = await response.json();
-      console.log('Response data:', responseData);
-      console.log('=== API REQUEST SUCCESS ===');
+      // Check if response has content
+      const contentType = response.headers.get('content-type');
+      const contentLength = response.headers.get('content-length');
       
-      // Extract data field if it exists, otherwise return the full response
-      return responseData.data || responseData;
+      // If no content or content-length is 0, return success message
+      if (!contentType || !contentType.includes('application/json') || contentLength === '0') {
+        console.log('Empty response or non-JSON content');
+        console.log('=== API REQUEST SUCCESS ===');
+        return { success: true, message: 'Operation completed successfully' };
+      }
+      
+      // Try to parse JSON, but handle empty responses gracefully
+      try {
+        const responseData = await response.json();
+        console.log('Response data:', responseData);
+        console.log('=== API REQUEST SUCCESS ===');
+        
+        // Extract data field if it exists, otherwise return the full response
+        return responseData.data || responseData;
+      } catch (jsonError) {
+        // If JSON parsing fails, it might be an empty response
+        console.log('JSON parsing failed, treating as empty response:', jsonError.message);
+        console.log('=== API REQUEST SUCCESS ===');
+        return { success: true, message: 'Operation completed successfully' };
+      }
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -71,7 +90,9 @@ class ApiService {
   async createUser(userData) {
     return this.request('/users', {
       method: 'POST',
-      body: JSON.stringify(userData),
+      body: JSON.stringify({
+        user: userData
+      }),
     });
   }
 
@@ -125,21 +146,27 @@ class ApiService {
   async createWorkingTime(workingTimeData) {
     return this.request('/workingtimes', {
       method: 'POST',
-      body: JSON.stringify(workingTimeData),
+      body: JSON.stringify({
+        working_time: workingTimeData
+      }),
     });
   }
 
   async updateWorkingTime(id, workingTimeData) {
     return this.request(`/workingtimes/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(workingTimeData),
+      body: JSON.stringify({
+        working_time: workingTimeData
+      }),
     });
   }
 
   async patchWorkingTime(id, workingTimeData) {
     return this.request(`/workingtimes/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(workingTimeData),
+      body: JSON.stringify({
+        working_time: workingTimeData
+      }),
     });
   }
 
@@ -173,21 +200,27 @@ class ApiService {
   async createClock(clockData) {
     return this.request('/clocks', {
       method: 'POST',
-      body: JSON.stringify(clockData),
+      body: JSON.stringify({
+        clock: clockData
+      }),
     });
   }
 
   async updateClock(id, clockData) {
     return this.request(`/clocks/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(clockData),
+      body: JSON.stringify({
+        clock: clockData
+      }),
     });
   }
 
   async patchClock(id, clockData) {
     return this.request(`/clocks/${id}`, {
       method: 'PATCH',
-      body: JSON.stringify(clockData),
+      body: JSON.stringify({
+        clock: clockData
+      }),
     });
   }
 

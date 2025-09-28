@@ -12,11 +12,11 @@
         <div>
           <Label for="date" class="text-blue-900 font-medium block mb-2">Date</Label>
           <div class="relative">
-            <Input
+            <input
               id="date"
               type="date"
               v-model="timeEntry.date"
-              class="w-full bg-white text-blue-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-10"
+              class="w-full bg-white text-blue-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
             />
             <Calendar class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600 pointer-events-none" />
           </div>
@@ -24,11 +24,11 @@
         <div>
           <Label for="startTime" class="text-blue-900 font-medium block mb-2">Start Time</Label>
           <div class="relative">
-            <Input
+            <input
               id="startTime"
               type="time"
               v-model="timeEntry.startTime"
-              class="w-full bg-white text-blue-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-10"
+              class="w-full bg-white text-blue-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
             />
             <Clock class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600 pointer-events-none" />
           </div>
@@ -36,11 +36,11 @@
         <div>
           <Label for="endTime" class="text-blue-900 font-medium block mb-2">End Time</Label>
           <div class="relative">
-            <Input
+            <input
               id="endTime"
               type="time"
               v-model="timeEntry.endTime"
-              class="w-full bg-white text-blue-900 border-gray-300 focus:border-blue-500 focus:ring-blue-500 pr-10"
+              class="w-full bg-white text-blue-900 border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 pr-10"
             />
             <Clock class="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-blue-600 pointer-events-none" />
           </div>
@@ -62,7 +62,7 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import Card from './ui/card.vue';
 import CardContent from './ui/card-content.vue';
 import CardHeader from './ui/card-header.vue';
@@ -72,6 +72,7 @@ import Input from './ui/input.vue';
 import Label from './ui/label.vue';
 import { Timer, Save, Calendar, Clock } from 'lucide-vue-next';
 import { apiService } from '../services/api.js';
+import { createISODateTime } from '../utils/dateUtils.js';
 
 export default {
   name: 'WorkingTime',
@@ -104,6 +105,7 @@ export default {
       endTime: '17:00'
     });
 
+
     const cancelEntry = () => {
       // Reset form to default values
       timeEntry.value = {
@@ -113,11 +115,18 @@ export default {
       };
     };
 
+
     const saveTimeEntry = async () => {
       try {
+        // Validate required fields
+        if (!timeEntry.value.date) {
+          alert('Please select a date');
+          return;
+        }
+        
         // Combine date and time to create ISO datetime strings
-        const startDateTime = new Date(`${timeEntry.value.date}T${timeEntry.value.startTime}`).toISOString();
-        const endDateTime = new Date(`${timeEntry.value.date}T${timeEntry.value.endTime}`).toISOString();
+        const startDateTime = createISODateTime(timeEntry.value.date, timeEntry.value.startTime);
+        const endDateTime = createISODateTime(timeEntry.value.date, timeEntry.value.endTime);
         
         const workingTimeData = {
           user_id: props.userId,
@@ -134,7 +143,6 @@ export default {
           endTime: '17:00'
         };
         
-        console.log('Time entry saved successfully');
         alert('Time entry saved successfully!');
       } catch (err) {
         console.error('Failed to save time entry via API:', err);

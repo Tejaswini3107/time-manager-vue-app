@@ -1,0 +1,46 @@
+config:
+  target: 'https://your-domain.com'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 10
+      name: "Ramp up load"
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained load"
+    - duration: 60
+      arrivalRate: 5
+      name: "Ramp down"
+
+scenarios:
+  - name: "API Health Check"
+    weight: 20
+    flow:
+      - get:
+          url: "/api/health"
+
+  - name: "User Login Flow"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/users"
+          json:
+            username: "testuser{{ $randomString() }}"
+            email: "test{{ $randomString() }}@example.com"
+      - get:
+          url: "/api/users"
+
+  - name: "Working Time Operations"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/workingtimes"
+          json:
+            working_time:
+              user_id: 1
+              start: "{{ $isoTimestamp }}"
+              end: "{{ $isoTimestamp }}"
+      - get:
+          url: "/api/workingtimes?user_id=1"
