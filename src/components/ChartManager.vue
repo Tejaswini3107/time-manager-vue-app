@@ -115,8 +115,7 @@ import {
   RadialLinearScale,
   RadarController
 } from 'chart.js';
-import { useWorkingTime } from '../composables/useWorkingTime.js';
-import { useClocks } from '../composables/useClocks.js';
+import { apiService } from '../services/api.js';
 import Card from './ui/card.vue';
 import CardContent from './ui/card-content.vue';
 import CardHeader from './ui/card-header.vue';
@@ -165,8 +164,9 @@ export default {
     }
   },
   setup(props) {
-    const { workingTimes, fetchWorkingTimes, loading: workingTimeLoading } = useWorkingTime();
-    const { clocks, fetchClocks, loading: clocksLoading } = useClocks();
+    const workingTimes = ref([]);
+    const clocks = ref([]);
+    const loading = ref(false);
     
     const workingHoursChart = ref(null);
     const selectedChartType = ref('bar');
@@ -210,13 +210,16 @@ export default {
           startDate.setDate(startDate.getDate() - 28);
         }
         
-        await Promise.all([
-          fetchWorkingTimes(props.userId, {
+        const [workingTimesData, clocksData] = await Promise.all([
+          apiService.getWorkingTimes(props.userId, {
             start: startDate.toISOString(),
             end: endDate.toISOString()
           }),
-          fetchClocks(props.userId)
+          apiService.getClocks(props.userId)
         ]);
+        
+        workingTimes.value = Array.isArray(workingTimesData) ? workingTimesData : [];
+        clocks.value = Array.isArray(clocksData) ? clocksData : [];
       } catch (err) {
         console.error('Failed to fetch data:', err);
       }
@@ -763,7 +766,7 @@ export default {
       averageHours,
       workingTimes,
       clocks,
-      loading: computed(() => workingTimeLoading.value || clocksLoading.value)
+      loading
     };
   }
 };

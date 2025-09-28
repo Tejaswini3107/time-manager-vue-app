@@ -59,7 +59,7 @@ import CardHeader from './ui/card-header.vue';
 import CardTitle from './ui/card-title.vue';
 import Badge from './ui/badge.vue';
 import { Clock, Play, Square } from 'lucide-vue-next';
-import { useClocks } from '../composables/useClocks.js';
+import { apiService } from '../services/api.js';
 
 export default {
   name: 'ClockManager',
@@ -81,18 +81,9 @@ export default {
     }
   },
   setup(props) {
-    const {
-      clocks,
-      loading,
-      error,
-      isClockedIn,
-      todayTotalHours,
-      currentSessionDuration,
-      fetchClocks,
-      clockIn,
-      clockOut
-    } = useClocks();
-
+    const clocks = ref([]);
+    const loading = ref(false);
+    const error = ref(null);
     const currentTime = ref(new Date());
     let timer = null;
 
@@ -104,10 +95,124 @@ export default {
       return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
     };
 
+    // Computed properties
+    const isClockedIn = computed(() => {
+      if (!Array.isArray(clocks.value) || clocks.value.length === 0) return false;
+      const lastClock = clocks.value[clocks.value.length - 1];
+      return lastClock && lastClock.status === true;
+    });
+
+    const todayClocks = computed(() => {
+      if (!Array.isArray(clocks.value)) return [];
+      const today = new Date().toISOString().split('T')[0];
+      return clocks.value.filter(clock => {
+        const clockDate = new Date(clock.time).toISOString().split('T')[0];
+        return clockDate === today;
+      });
+    });
+
+    const currentSessionDuration = computed(() => {
+      if (!isClockedIn.value) return 0;
+      const lastClock = todayClocks.value[todayClocks.value.length - 1];
+      if (!lastClock) return 0;
+      const startTime = new Date(lastClock.time);
+      const now = new Date();
+      return (now - startTime) / (1000 * 60 * 60); // hours
+    });
+
+    const todayTotalHours = computed(() => {
+      if (!Array.isArray(todayClocks.value)) return 0;
+      let totalHours = 0;
+      for (let i = 0; i < todayClocks.value.length; i += 2) {
+        const clockIn = todayClocks.value[i];
+        const clockOut = todayClocks.value[i + 1];
+        if (clockIn && clockOut) {
+          const startTime = new Date(clockIn.time);
+          const endTime = new Date(clockOut.time);
+          totalHours += (endTime - startTime) / (1000 * 60 * 60);
+        } else if (clockIn && isClockedIn.value && i === todayClocks.value.length - 1) {
+          // Current session
+          totalHours += currentSessionDuration.value;
+        }
+      }
+      return totalHours;
+    });
+
     const formatHours = (hours) => {
       const h = Math.floor(hours);
       const m = Math.floor((hours - h) * 60);
       return `${h}h ${m}m`;
+    };
+
+    // API functions
+    const fetchClocks = async (userId) => {
+      try {
+        loading.value = true;
+        error.value = null;
+        console.log('Fetching clocks for user:', userId);
+        
+        const data = await apiService.getClocks(userId);
+        console.log('Fetched clocks data:', data);
+        
+        clocks.value = Array.isArray(data) ? data : [];
+        console.log('Set clocks.value to:', clocks.value);
+      } catch (err) {
+        console.error('Failed to fetch clocks:', err);
+        error.value = err.message;
+        clocks.value = [];
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const clockIn = async (userId) => {
+      try {
+        console.log('Clock in for user:', userId);
+        const clockData = {
+          user_id: userId,
+          status: true,
+          time: new Date().toISOString()
+        };
+        
+        const result = await apiService.createClock(clockData);
+        console.log('Clock in result:', result);
+        
+        // Add to local array
+        if (!Array.isArray(clocks.value)) {
+          clocks.value = [];
+        }
+        clocks.value.push(result);
+        
+        return result;
+      } catch (err) {
+        console.error('Clock in failed:', err);
+        throw err;
+      }
+    };
+
+    const clockOut = async (userId) => {
+      try {
+        console.log('Clock out for user:', userId);
+        const clockData = {
+          user_id: userId,
+          status: false,
+          time: new Date().toISOString()
+        };
+        
+        const result = await apiService.createClock(clockData);
+        console.log('Clock out result:', result);
+        
+        // Add to local array
+        if (!Array.isArray(clocks.value)) {
+          clocks.value = [];
+        }
+        clocks.value.push(result);
+        
+        return result;
+      } catch (err) {
+        console.error('Clock out failed:', err);
+        throw err;
+      }
     };
 
     const clock = async () => {

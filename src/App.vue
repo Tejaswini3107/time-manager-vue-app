@@ -42,7 +42,7 @@
                 <UserIcon class="h-4 w-4 text-primary-foreground" />
               </div>
               <div v-if="sidebarOpen" class="flex-1 min-w-0">
-                <p class="text-sm font-medium truncate">{{ currentUser.name }}</p>
+                <p class="text-sm font-medium truncate">{{ currentUser.username }}</p>
                 <p class="text-xs text-muted-foreground truncate">User</p>
               </div>
             </div>

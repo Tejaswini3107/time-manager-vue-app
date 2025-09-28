@@ -71,7 +71,7 @@ import Button from './ui/button.vue';
 import Input from './ui/input.vue';
 import Label from './ui/label.vue';
 import { Timer, Save, Calendar, Clock } from 'lucide-vue-next';
-import { useWorkingTime } from '../composables/useWorkingTime.js';
+import { apiService } from '../services/api.js';
 
 export default {
   name: 'WorkingTime',
@@ -95,7 +95,8 @@ export default {
     }
   },
   setup(props) {
-    const { createWorkingTime, loading, error } = useWorkingTime();
+    const loading = ref(false);
+    const error = ref(null);
     
     const timeEntry = ref({
       date: new Date().toISOString().split('T')[0],
@@ -119,11 +120,12 @@ export default {
         const endDateTime = new Date(`${timeEntry.value.date}T${timeEntry.value.endTime}`).toISOString();
         
         const workingTimeData = {
+          user_id: props.userId,
           start: startDateTime,
           end: endDateTime
         };
 
-        await createWorkingTime(props.userId, workingTimeData);
+        await apiService.createWorkingTime(workingTimeData);
         
         // Reset form after successful save
         timeEntry.value = {

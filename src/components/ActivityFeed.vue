@@ -29,8 +29,7 @@ import CardContent from './ui/card-content.vue';
 import CardHeader from './ui/card-header.vue';
 import CardTitle from './ui/card-title.vue';
 import { Activity, Clock, CheckCircle, Timer, Coffee } from 'lucide-vue-next';
-import { useWorkingTime } from '../composables/useWorkingTime.js';
-import { useClocks } from '../composables/useClocks.js';
+import { apiService } from '../services/api.js';
 
 export default {
   name: 'ActivityFeed',
@@ -50,26 +49,36 @@ export default {
     }
   },
   setup(props) {
-    const { workingTimes, fetchWorkingTimes, loading: workingTimeLoading } = useWorkingTime();
-    const { clocks, fetchClocks, loading: clocksLoading } = useClocks();
+    const workingTimes = ref([]);
+    const clocks = ref([]);
+    const loading = ref(false);
 
     // Fetch data on mount
     onMounted(async () => {
       try {
+        loading.value = true;
+        
         // Get recent data (last 7 days)
         const endDate = new Date();
         const startDate = new Date();
         startDate.setDate(startDate.getDate() - 7);
         
-        await Promise.all([
-          fetchWorkingTimes(props.userId, {
+        const [workingTimesData, clocksData] = await Promise.all([
+          apiService.getWorkingTimes(props.userId, {
             start: startDate.toISOString(),
             end: endDate.toISOString()
           }),
-          fetchClocks(props.userId)
+          apiService.getClocks(props.userId)
         ]);
+        
+        workingTimes.value = Array.isArray(workingTimesData) ? workingTimesData : [];
+        clocks.value = Array.isArray(clocksData) ? clocksData : [];
       } catch (err) {
         console.error('Failed to fetch activity data:', err);
+        workingTimes.value = [];
+        clocks.value = [];
+      } finally {
+        loading.value = false;
       }
     });
 
@@ -131,11 +140,9 @@ export default {
       return date.toLocaleDateString();
     };
 
-    const isLoading = computed(() => workingTimeLoading.value || clocksLoading.value);
-
     return {
       activities,
-      isLoading,
+      loading,
       workingTimes,
       clocks
     };

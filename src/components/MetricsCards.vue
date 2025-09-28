@@ -24,8 +24,7 @@ import CardContent from './ui/card-content.vue';
 import CardHeader from './ui/card-header.vue';
 import CardTitle from './ui/card-title.vue';
 import { Clock, Calendar, TrendingUp, Target } from 'lucide-vue-next';
-import { useWorkingTime } from '../composables/useWorkingTime.js';
-import { useClocks } from '../composables/useClocks.js';
+import { apiService } from '../services/api.js';
 
 export default {
   name: 'MetricsCards',
@@ -46,27 +45,95 @@ export default {
     }
   },
   setup(props) {
-    const { workingTimes, totalHours, currentWeekWorkingTimes, fetchWorkingTimes, loading: workingTimeLoading } = useWorkingTime();
-    const { todayTotalHours, isClockedIn, fetchClocks, loading: clocksLoading } = useClocks();
+    const workingTimes = ref([]);
+    const clocks = ref([]);
+    const loading = ref(false);
+
+    // Computed properties
+    const totalHours = computed(() => {
+      if (!Array.isArray(workingTimes.value)) return 0;
+      return workingTimes.value.reduce((total, entry) => {
+        const start = new Date(entry.start);
+        const end = new Date(entry.end);
+        const hours = (end - start) / (1000 * 60 * 60);
+        return total + (isNaN(hours) ? 0 : hours);
+      }, 0);
+    });
+
+    const currentWeekWorkingTimes = computed(() => {
+      if (!Array.isArray(workingTimes.value)) return [];
+      const now = new Date();
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const endOfWeek = new Date(now);
+      endOfWeek.setDate(now.getDate() - now.getDay() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+      
+      return workingTimes.value.filter(entry => {
+        const entryDate = new Date(entry.start);
+        return entryDate >= startOfWeek && entryDate <= endOfWeek;
+      });
+    });
+
+    const todayClocks = computed(() => {
+      if (!Array.isArray(clocks.value)) return [];
+      const today = new Date().toISOString().split('T')[0];
+      return clocks.value.filter(clock => {
+        const clockDate = new Date(clock.time).toISOString().split('T')[0];
+        return clockDate === today;
+      });
+    });
+
+    const todayTotalHours = computed(() => {
+      if (!Array.isArray(todayClocks.value)) return 0;
+      let totalHours = 0;
+      for (let i = 0; i < todayClocks.value.length; i += 2) {
+        const clockIn = todayClocks.value[i];
+        const clockOut = todayClocks.value[i + 1];
+        if (clockIn && clockOut) {
+          const startTime = new Date(clockIn.time);
+          const endTime = new Date(clockOut.time);
+          totalHours += (endTime - startTime) / (1000 * 60 * 60);
+        }
+      }
+      return totalHours;
+    });
+
+    const isClockedIn = computed(() => {
+      if (!Array.isArray(clocks.value) || clocks.value.length === 0) return false;
+      const lastClock = clocks.value[clocks.value.length - 1];
+      return lastClock && lastClock.status === true;
+    });
 
     // Fetch data on mount
     onMounted(async () => {
       try {
+        loading.value = true;
+        
         // Get current week data
         const startOfWeek = new Date();
         startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
         const endOfWeek = new Date();
         endOfWeek.setDate(endOfWeek.getDate() - endOfWeek.getDay() + 6);
         
-        await Promise.all([
-          fetchWorkingTimes(props.userId, {
+        const [workingTimesData, clocksData] = await Promise.all([
+          apiService.getWorkingTimes(props.userId, {
             start: startOfWeek.toISOString(),
             end: endOfWeek.toISOString()
           }),
-          fetchClocks(props.userId)
+          apiService.getClocks(props.userId)
         ]);
+        
+        workingTimes.value = Array.isArray(workingTimesData) ? workingTimesData : [];
+        clocks.value = Array.isArray(clocksData) ? clocksData : [];
       } catch (err) {
         console.error('Failed to fetch metrics data:', err);
+        workingTimes.value = [];
+        clocks.value = [];
+      } finally {
+        loading.value = false;
       }
     });
 
@@ -120,11 +187,9 @@ export default {
       ];
     });
 
-    const isLoading = computed(() => workingTimeLoading.value || clocksLoading.value);
-
     return {
       metrics,
-      isLoading,
+      loading,
       workingTimes,
       todayTotalHours,
       isClockedIn

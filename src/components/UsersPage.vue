@@ -117,7 +117,7 @@
                       <User class="h-4 w-4 text-primary-foreground" />
                     </div>
                     <div>
-                      <p class="font-medium">{{ user.name || 'User ' + user.id }}</p>
+                      <p class="font-medium">{{ user.username || 'User ' + user.id }}</p>
                       <p class="text-sm text-muted-foreground">ID: {{ user.id }}</p>
                     </div>
                   </div>
@@ -176,8 +176,8 @@
         <CardContent class="space-y-4">
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-sm font-medium text-muted-foreground">Name</label>
-              <p class="text-lg">{{ selectedUser.name || 'User ' + selectedUser.id }}</p>
+              <label class="text-sm font-medium text-muted-foreground">Username</label>
+              <p class="text-lg">{{ selectedUser.username || 'User ' + selectedUser.id }}</p>
             </div>
             <div>
               <label class="text-sm font-medium text-muted-foreground">Email</label>
@@ -245,11 +245,11 @@
         </CardHeader>
         <CardContent class="space-y-4">
           <div class="space-y-2">
-            <label class="text-sm font-medium">Name</label>
+            <label class="text-sm font-medium">Username</label>
             <input
-              v-model="newUser.name"
+              v-model="newUser.username"
               type="text"
-              placeholder="Enter user name"
+              placeholder="Enter username"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
@@ -269,7 +269,7 @@
             </div>
           </div>
           <div class="flex items-center space-x-2 pt-4">
-            <Button @click="saveNewUser" :disabled="!newUser.name || !newUser.email || addUserLoading" class="flex-1">
+            <Button @click="saveNewUser" :disabled="!newUser.username || !newUser.email || addUserLoading" class="flex-1">
               <Save v-if="!addUserLoading" class="h-4 w-4 mr-2" />
               <RefreshCw v-else class="h-4 w-4 mr-2 animate-spin" />
               {{ addUserLoading ? 'Creating...' : 'Create User' }}
@@ -281,14 +281,61 @@
         </CardContent>
       </Card>
     </div>
+
+    <!-- Edit User Modal -->
+    <div v-if="showEditUserModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <Card class="w-96">
+        <CardHeader>
+          <div class="flex items-center justify-between">
+            <CardTitle>Edit User</CardTitle>
+            <Button variant="ghost" size="sm" @click="closeEditUserModal">
+              <X class="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent class="space-y-4">
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Username</label>
+            <input
+              v-model="editUserData.username"
+              type="text"
+              placeholder="Enter username"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Email</label>
+            <input
+              v-model="editUserData.email"
+              type="email"
+              placeholder="Enter email"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div v-if="editUserError" class="flex items-center p-3 bg-red-50 border border-red-200 rounded-md">
+            <AlertCircle class="h-5 w-5 text-red-500 mr-2" />
+            <p class="text-red-700 text-sm">{{ editUserError }}</p>
+          </div>
+          <div class="flex items-center space-x-2 pt-4">
+            <Button @click="saveEditUser" :disabled="!editUserData.username || !editUserData.email || editUserLoading" class="flex-1">
+              <Save v-if="!editUserLoading" class="h-4 w-4 mr-2" />
+              <RefreshCw v-else class="h-4 w-4 mr-2 animate-spin" />
+              {{ editUserLoading ? 'Updating...' : 'Update User' }}
+            </Button>
+            <Button variant="outline" @click="closeEditUserModal">
+              <X class="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   </div>
 </template>
 
 <script>
 import { ref, computed, onMounted } from 'vue';
-import { useUsers } from '../composables/useUsers.js';
-import { useClocks } from '../composables/useClocks.js';
-import { useWorkingTime } from '../composables/useWorkingTime.js';
+import { apiService } from '../services/api.js';
 import Button from './ui/button.vue';
 import Card from './ui/card.vue';
 import CardContent from './ui/card-content.vue';
@@ -335,22 +382,40 @@ export default {
     Trash2
   },
   setup() {
-    const { users, fetchUsers, loading, error, createUser, deleteUser: deleteUserAPI } = useUsers();
-    const { clocks, fetchClocks } = useClocks();
-    const { workingTimes, fetchWorkingTimes } = useWorkingTime();
+    const users = ref([]);
+    const clocks = ref([]);
+    const workingTimes = ref([]);
+    const loading = ref(false);
+    const error = ref(null);
     
     const selectedUser = ref(null);
     const showAddUserModal = ref(false);
+    const showEditUserModal = ref(false);
     const addUserLoading = ref(false);
     const addUserError = ref('');
+    const editUserLoading = ref(false);
+    const editUserError = ref('');
     const newUser = ref({
-      name: '',
+      username: '',
+      email: ''
+    });
+    const editUserData = ref({
+      id: null,
+      username: '',
       email: ''
     });
 
     // Computed properties for user details
     const usersWithDetails = computed(() => {
       return users.value.map(user => {
+        // Map API fields to frontend expected fields
+        const mappedUser = {
+          id: user.id,
+          username: user.username, // Use username directly from API
+          email: user.email,
+          created_at: user.created_at
+        };
+        
         const userClocks = clocks.value.filter(clock => clock.user_id == user.id);
         const userWorkingTimes = workingTimes.value.filter(wt => wt.user_id == user.id);
         
@@ -383,13 +448,13 @@ export default {
         })).reverse();
         
         return {
-          ...user,
+          ...mappedUser,
           isClockedIn: lastClock ? lastClock.status : false,
           todayHours: Math.round(todayClocks.length * 0.5 * 100) / 100, // Rough estimate
           totalHours: Math.round(totalHours * 100) / 100,
           lastActivity,
           recentActivity,
-          createdAt: user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'
+          createdAt: mappedUser.created_at ? new Date(mappedUser.created_at).toLocaleDateString() : 'Unknown'
         };
       });
     });
@@ -408,6 +473,42 @@ export default {
       return Math.round((total / days) * 100) / 100;
     });
 
+    // API functions
+    const fetchUsers = async () => {
+      try {
+        loading.value = true;
+        error.value = null;
+        const data = await apiService.getUsers();
+        users.value = Array.isArray(data) ? data : [];
+      } catch (err) {
+        console.error('Failed to fetch users:', err);
+        error.value = err.message;
+        users.value = [];
+      } finally {
+        loading.value = false;
+      }
+    };
+
+    const fetchClocks = async () => {
+      try {
+        const data = await apiService.getClocks();
+        clocks.value = Array.isArray(data) ? data : [];
+      } catch (err) {
+        console.error('Failed to fetch clocks:', err);
+        clocks.value = [];
+      }
+    };
+
+    const fetchWorkingTimes = async () => {
+      try {
+        const data = await apiService.getWorkingTimes();
+        workingTimes.value = Array.isArray(data) ? data : [];
+      } catch (err) {
+        console.error('Failed to fetch working times:', err);
+        workingTimes.value = [];
+      }
+    };
+
     const refreshUsers = async () => {
       try {
         await Promise.all([
@@ -425,15 +526,19 @@ export default {
     };
 
     const editUser = (user) => {
-      // TODO: Implement edit user functionality
-      console.log('Edit user:', user);
+      editUserData.value = {
+        id: user.id,
+        username: user.username,
+        email: user.email
+      };
+      showEditUserModal.value = true;
     };
 
     const deleteUser = async (user) => {
-      if (confirm(`Are you sure you want to delete user "${user.name || 'User ' + user.id}"? This action cannot be undone.`)) {
+      if (confirm(`Are you sure you want to delete user "${user.username || 'User ' + user.id}"? This action cannot be undone.`)) {
         try {
           console.log('Deleting user:', user);
-          await deleteUserAPI(user.id);
+          await apiService.deleteUser(user.id);
           
           // Refresh users list
           await refreshUsers();
@@ -447,7 +552,7 @@ export default {
     };
 
     const saveNewUser = async () => {
-      if (!newUser.value.name || !newUser.value.email) {
+      if (!newUser.value.username || !newUser.value.email) {
         addUserError.value = 'Please fill in all required fields';
         return;
       }
@@ -457,10 +562,15 @@ export default {
 
       try {
         console.log('Creating new user:', newUser.value);
-        await createUser(newUser.value);
+        // Send user data directly (already using correct field names)
+        const userData = {
+          username: newUser.value.username,
+          email: newUser.value.email
+        };
+        await apiService.createUser(userData);
         
         // Reset form
-        newUser.value = { name: '', email: '' };
+        newUser.value = { username: '', email: '' };
         showAddUserModal.value = false;
         
         // Refresh users list
@@ -477,8 +587,45 @@ export default {
 
     const closeAddUserModal = () => {
       showAddUserModal.value = false;
-      newUser.value = { name: '', email: '' };
+      newUser.value = { username: '', email: '' };
       addUserError.value = '';
+    };
+
+    const saveEditUser = async () => {
+      if (!editUserData.value.username || !editUserData.value.email) {
+        editUserError.value = 'Please fill in all required fields';
+        return;
+      }
+
+      editUserLoading.value = true;
+      editUserError.value = '';
+
+      try {
+        console.log('Updating user:', editUserData.value);
+        await apiService.updateUser(editUserData.value.id, {
+          username: editUserData.value.username,
+          email: editUserData.value.email
+        });
+        
+        // Close modal
+        showEditUserModal.value = false;
+        
+        // Refresh users list
+        await refreshUsers();
+        
+        console.log('User updated successfully');
+      } catch (err) {
+        console.error('Failed to update user:', err);
+        editUserError.value = err.message || 'Failed to update user. Please try again.';
+      } finally {
+        editUserLoading.value = false;
+      }
+    };
+
+    const closeEditUserModal = () => {
+      showEditUserModal.value = false;
+      editUserData.value = { id: null, username: '', email: '' };
+      editUserError.value = '';
     };
 
     onMounted(() => {
@@ -492,9 +639,13 @@ export default {
       error,
       selectedUser,
       showAddUserModal,
+      showEditUserModal,
       addUserLoading,
       addUserError,
+      editUserLoading,
+      editUserError,
       newUser,
+      editUserData,
       activeUsersToday,
       totalHoursWorked,
       averageHoursPerDay,
@@ -503,7 +654,9 @@ export default {
       editUser,
       deleteUser,
       saveNewUser,
-      closeAddUserModal
+      closeAddUserModal,
+      saveEditUser,
+      closeEditUserModal
     };
   }
 };

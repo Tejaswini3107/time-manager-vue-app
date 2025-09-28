@@ -1,5 +1,5 @@
 // API Service Layer for Time Manager Application
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_BASE_URL = 'http://localhost:4000/api';
 
 class ApiService {
   constructor() {
@@ -32,10 +32,12 @@ class ApiService {
         throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
-      const data = await response.json();
-      console.log('Response data:', data);
+      const responseData = await response.json();
+      console.log('Response data:', responseData);
       console.log('=== API REQUEST SUCCESS ===');
-      return data;
+      
+      // Extract data field if it exists, otherwise return the full response
+      return responseData.data || responseData;
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -120,14 +122,10 @@ class ApiService {
     return this.request('/workingtimes/new');
   }
 
-  async createWorkingTime(userID, workingTimeData) {
-    const dataWithUserId = {
-      ...workingTimeData,
-      user_id: userID
-    };
+  async createWorkingTime(workingTimeData) {
     return this.request('/workingtimes', {
       method: 'POST',
-      body: JSON.stringify(dataWithUserId),
+      body: JSON.stringify(workingTimeData),
     });
   }
 
@@ -172,14 +170,10 @@ class ApiService {
     return this.request('/clocks/new');
   }
 
-  async createClock(userID, clockData) {
-    const dataWithUserId = {
-      ...clockData,
-      user_id: userID
-    };
+  async createClock(clockData) {
     return this.request('/clocks', {
       method: 'POST',
-      body: JSON.stringify(dataWithUserId),
+      body: JSON.stringify(clockData),
     });
   }
 
@@ -202,7 +196,6 @@ class ApiService {
       method: 'DELETE',
     });
   }
-
 }
 
 // Create and export a singleton instance

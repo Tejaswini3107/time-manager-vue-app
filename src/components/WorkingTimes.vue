@@ -104,7 +104,7 @@ import Button from './ui/button.vue';
 import Input from './ui/input.vue';
 import Label from './ui/label.vue';
 import { Calendar, Plus, Timer, Clock, Save } from 'lucide-vue-next';
-import { useWorkingTime } from '../composables/useWorkingTime.js';
+import { apiService } from '../services/api.js';
 
 export default {
   name: 'WorkingTimes',
@@ -129,9 +129,10 @@ export default {
     }
   },
   setup(props) {
-    const { fetchWorkingTimes, createWorkingTime, loading, error } = useWorkingTime();
     const workingTimes = ref([]);
     const showAddModal = ref(false);
+    const loading = ref(false);
+    const error = ref(null);
     
     const timeEntry = ref({
       date: new Date().toISOString().split('T')[0],
@@ -143,9 +144,9 @@ export default {
       try {
         console.log('=== LOADING WORKING TIMES ===');
         console.log('User ID:', props.userId);
-        console.log('Calling fetchWorkingTimes...');
+        console.log('Calling apiService.getWorkingTimes...');
         
-        const data = await fetchWorkingTimes(props.userId);
+        const data = await apiService.getWorkingTimes(props.userId);
         console.log('Raw API data:', data);
         console.log('Data type:', typeof data);
         console.log('Data length:', data ? data.length : 'null/undefined');
@@ -208,14 +209,15 @@ export default {
         console.log('End DateTime:', endDateTime);
         
         const workingTimeData = {
+          user_id: props.userId,
           start: startDateTime,
           end: endDateTime
         };
 
         console.log('Working Time Data:', workingTimeData);
-        console.log('Calling createWorkingTime...');
+        console.log('Calling apiService.createWorkingTime...');
         
-        const result = await createWorkingTime(props.userId, workingTimeData);
+        const result = await apiService.createWorkingTime(workingTimeData);
         console.log('Create result:', result);
         
         // Close modal and reload data

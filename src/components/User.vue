@@ -6,7 +6,7 @@
           <UserIcon class="h-6 w-6 text-primary-foreground" />
         </div>
         <div>
-          <CardTitle class="text-lg">{{ currentUser.name || 'Loading...' }}</CardTitle>
+          <CardTitle class="text-lg">{{ currentUser.username || 'Loading...' }}</CardTitle>
           <p class="text-sm text-muted-foreground">User</p>
         </div>
       </div>
@@ -37,10 +37,10 @@
         <h2 class="text-lg font-semibold mb-4">Edit User</h2>
         <div class="space-y-4">
           <div>
-            <Label for="name">Name</Label>
+            <Label for="username">Username</Label>
             <Input
-              id="name"
-              v-model="editUser.name"
+              id="username"
+              v-model="editUser.username"
             />
           </div>
           <div>
@@ -75,7 +75,7 @@ import Button from './ui/button.vue';
 import Input from './ui/input.vue';
 import Label from './ui/label.vue';
 import { User as UserIcon, Edit, Users } from 'lucide-vue-next';
-import { useUsers } from '../composables/useUsers.js';
+import { apiService } from '../services/api.js';
 
 export default {
   name: 'User',
@@ -103,11 +103,6 @@ export default {
   },
   emits: ['navigate-to-users'],
   setup(props, { emit }) {
-    const { 
-      updateUser: updateUserAPI,
-      fetchUserById
-    } = useUsers();
-    
     const isEditOpen = ref(false);
     const currentUser = ref({ ...props.currentUser });
     const editUser = ref({ ...props.currentUser });
@@ -122,7 +117,7 @@ export default {
         error.value = null;
         console.log('Loading user data for ID:', props.currentUser.id);
         
-        const userData = await fetchUserById(props.currentUser.id);
+        const userData = await apiService.getUserById(props.currentUser.id);
         console.log('Fetched user data:', userData);
         
         currentUser.value = userData;
@@ -148,7 +143,7 @@ export default {
 
     const updateUser = async () => {
       try {
-        const updatedUser = await updateUserAPI(currentUser.value.id, editUser.value);
+        const updatedUser = await apiService.updateUser(currentUser.value.id, editUser.value);
         currentUser.value = updatedUser;
         props.onUserUpdate(updatedUser);
         isEditOpen.value = false;
