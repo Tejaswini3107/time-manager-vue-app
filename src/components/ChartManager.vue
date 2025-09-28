@@ -237,6 +237,11 @@ export default {
           weekData[dayOfWeek].hours += hours;
         });
         
+        // Return empty data if no working times
+        if (workingTimes.value.length === 0) {
+          return weekData;
+        }
+        
         return weekData;
       } else {
         // Monthly data (4 weeks)
@@ -264,6 +269,11 @@ export default {
             week: `Week ${4 - i}`,
             hours: weekHours
           });
+        }
+        
+        // Return empty data if no working times
+        if (workingTimes.value.length === 0) {
+          return weeks;
         }
         
         return weeks;
@@ -295,9 +305,8 @@ export default {
       const totalHours = workingHoursData.value.reduce((sum, item) => sum + item.hours, 0);
       
       if (totalHours === 0) {
-        return [
-          { category: 'No Data', hours: 0, color: '#6b7280' }
-        ];
+        // Return empty data when no real data exists
+        return [];
       }
       
       // Since we don't have category data from the API, we'll show a simple breakdown
@@ -391,6 +400,17 @@ export default {
       }
 
       const ctx = workingHoursChart.value.getContext('2d');
+      
+      // Check if we have data
+      if (workingHoursData.value.length === 0) {
+        // Show "No Data" message
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data available', workingHoursChart.value.width / 2, workingHoursChart.value.height / 2);
+        return;
+      }
+
       currentChart = new ChartJS(ctx, {
         type: 'bar',
         data: {
@@ -477,6 +497,17 @@ export default {
       }
 
       const ctx = workingHoursChart.value.getContext('2d');
+      
+      // Check if we have data
+      if (lineChartData.value.length === 0) {
+        // Show "No Data" message
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data available', workingHoursChart.value.width / 2, workingHoursChart.value.height / 2);
+        return;
+      }
+
       currentChart = new ChartJS(ctx, {
         type: 'line',
         data: {
@@ -552,6 +583,17 @@ export default {
       }
 
       const ctx = workingHoursChart.value.getContext('2d');
+      
+      // Check if we have data
+      if (pieChartData.value.length === 0) {
+        // Show "No Data" message
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data available', workingHoursChart.value.width / 2, workingHoursChart.value.height / 2);
+        return;
+      }
+
       currentChart = new ChartJS(ctx, {
         type: 'doughnut',
         data: {
@@ -605,6 +647,18 @@ export default {
       }
 
       const ctx = workingHoursChart.value.getContext('2d');
+      
+      // Check if we have data
+      const totalHours = workingHoursData.value.reduce((sum, item) => sum + item.hours, 0);
+      if (totalHours === 0) {
+        // Show "No Data" message
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data available', workingHoursChart.value.width / 2, workingHoursChart.value.height / 2);
+        return;
+      }
+
       currentChart = new ChartJS(ctx, {
         type: 'radar',
         data: radarChartData.value,

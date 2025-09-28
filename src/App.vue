@@ -1,9 +1,6 @@
 <template>
-  <!-- Login Page -->
-  <Login v-if="!isLoggedIn" @login-success="handleLoginSuccess" />
-  
   <!-- Main Application -->
-  <div v-else class="min-h-screen flex w-full bg-background" :style="{background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'}">
+  <div class="min-h-screen flex w-full bg-background" :style="{background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)'}">
     <!-- Sidebar -->
     <div :class="`${sidebarOpen ? 'w-64' : 'w-16'} transition-all duration-300 border-r bg-background/95 backdrop-blur`">
       <div class="p-4 border-b">
@@ -46,20 +43,13 @@
               </div>
               <div v-if="sidebarOpen" class="flex-1 min-w-0">
                 <p class="text-sm font-medium truncate">{{ currentUser.name }}</p>
-                <p class="text-xs text-muted-foreground truncate">{{ currentUser.role }}</p>
+                <p class="text-xs text-muted-foreground truncate">User</p>
               </div>
             </div>
             <div v-if="sidebarOpen" class="mt-2 space-y-2">
               <Badge variant="secondary" class="text-xs">
                 ID: {{ currentUser.id }}
               </Badge>
-              <button
-                @click="handleLogout"
-                class="w-full flex items-center space-x-2 px-3 py-2 rounded-md text-sm text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-colors"
-              >
-                <LogOut class="h-4 w-4" />
-                <span>Logout</span>
-              </button>
             </div>
           </div>
         </div>
@@ -110,7 +100,6 @@
             
             <MetricsCards :userId="currentUser.id" />
             <DashboardCharts :userId="currentUser.id" />
-            <ActivityFeed :userId="currentUser.id" />
           </div>
 
           <!-- Clock -->
@@ -133,45 +122,37 @@
 
 <script>
 import { ref, computed } from 'vue';
-import Login from './components/Login.vue';
 import User from './components/User.vue';
 import ClockManager from './components/ClockManager.vue';
 import WorkingTimes from './components/WorkingTimes.vue';
 import ChartManager from './components/ChartManager.vue';
 import DashboardCharts from './components/DashboardCharts.vue';
 import MetricsCards from './components/MetricsCards.vue';
-import ActivityFeed from './components/ActivityFeed.vue';
 import Badge from './components/ui/badge.vue';
-import { Clock, BarChart3, Calendar, Timer, User as UserIcon, LogOut } from 'lucide-vue-next';
+import { Clock, BarChart3, Calendar, Timer, User as UserIcon } from 'lucide-vue-next';
 
 export default {
   name: 'App',
   components: {
-    Login,
     User,
     ClockManager,
     WorkingTimes,
     ChartManager,
     DashboardCharts,
     MetricsCards,
-    ActivityFeed,
     Badge,
     Clock,
     BarChart3,
     Calendar,
     Timer,
-    UserIcon,
-    LogOut
+    UserIcon
   },
   setup() {
-    // Login state
-    const isLoggedIn = ref(false);
-    
-    // Static user data - no authentication needed
+    // User data - default user for the application
     const currentUser = ref({
       id: 1,
-      name: 'John Doe',
-      email: 'john.doe@gothamcorp.com',
+      name: 'User',
+      email: 'user@example.com',
     });
 
     const activeTab = ref('dashboard');
@@ -179,22 +160,6 @@ export default {
 
     const handleUserUpdate = (user) => {
       currentUser.value = user;
-    };
-
-    const handleLoginSuccess = (credentials) => {
-      // Update user data based on login credentials
-      currentUser.value = {
-        id: 1, // Use numeric ID that matches backend
-        name: credentials.email.split('@')[0] || 'User',
-        email: credentials.email,
-        role: 'User',
-        avatar: undefined
-      };
-      isLoggedIn.value = true;
-    };
-
-    const handleLogout = () => {
-      isLoggedIn.value = false;
     };
 
         const sidebarItems = [
@@ -225,9 +190,6 @@ export default {
     const currentTitle = computed(() => sidebarItems.find(item => item.value === activeTab.value)?.title || 'Dashboard');
 
     return {
-      // Login state
-      isLoggedIn,
-      
       // User data
       currentUser,
       
@@ -237,8 +199,6 @@ export default {
       
       // Handlers
       handleUserUpdate,
-      handleLoginSuccess,
-      handleLogout,
       
       // Data
       sidebarItems,

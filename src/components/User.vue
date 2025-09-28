@@ -7,7 +7,7 @@
         </div>
         <div>
           <CardTitle class="text-lg">{{ currentUser.name }}</CardTitle>
-          <p class="text-sm text-muted-foreground">{{ currentUser.role }}</p>
+          <p class="text-sm text-muted-foreground">User</p>
         </div>
       </div>
       <div class="flex space-x-2">
@@ -15,7 +15,6 @@
           <Edit class="h-4 w-4" />
         </Button>
         <Button 
-          v-if="isManager" 
           variant="outline" 
           size="sm" 
           @click="openCreateUserModal"
@@ -24,7 +23,6 @@
           <Plus class="h-4 w-4" />
         </Button>
         <Button 
-          v-if="isManager" 
           variant="destructive" 
           size="sm" 
           @click="deleteUser"
@@ -33,7 +31,6 @@
           <Trash2 class="h-4 w-4" />
         </Button>
         <Button 
-          v-if="isManager" 
           variant="outline" 
           size="sm" 
           @click="openUserList"
@@ -68,13 +65,6 @@
               id="email"
               type="email"
               v-model="editUser.email"
-            />
-          </div>
-          <div>
-            <Label for="role">Role</Label>
-            <Input
-              id="role"
-              v-model="editUser.role"
             />
           </div>
         </div>
@@ -264,10 +254,6 @@ export default {
       password: ''
     });
 
-    // All users have access to all features
-    const isManager = computed(() => {
-      return true;
-    });
 
     // Form validation for create user
     const isCreateFormValid = computed(() => {
@@ -283,10 +269,6 @@ export default {
 
     // Open create user modal
     const openCreateUserModal = () => {
-      if (!isManager.value) {
-        alert('Only managers can create new users.');
-        return;
-      }
       showCreateUserModal.value = true;
     };
 
@@ -425,7 +407,6 @@ export default {
       creatingUser,
       editUser,
       newUser,
-      isManager,
       isCreateFormValid,
       allUsers,
       openCreateUserModal,

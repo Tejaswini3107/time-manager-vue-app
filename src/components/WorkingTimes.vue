@@ -151,12 +151,7 @@ export default {
         }));
       } catch (err) {
         console.error('Failed to load working times:', err);
-        // Fallback to demo data if API fails
-        workingTimes.value = [
-          { id: 1, date: '2024-01-15', start: '09:00', end: '17:00', hours: 8 },
-          { id: 2, date: '2024-01-16', start: '09:30', end: '18:00', hours: 8.5 },
-          { id: 3, date: '2024-01-17', start: '08:45', end: '17:30', hours: 8.75 }
-        ];
+        workingTimes.value = [];
       }
     };
 
