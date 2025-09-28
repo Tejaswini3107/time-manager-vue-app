@@ -91,7 +91,7 @@
           <div v-if="activeTab === 'dashboard'" class="space-y-6">
             <div class="flex flex-col lg:flex-row gap-6">
               <div class="flex-1">
-                <User :currentUser="currentUser" :onUserUpdate="handleUserUpdate" />
+                <User :currentUser="currentUser" :onUserUpdate="handleUserUpdate" @navigate-to-users="activeTab = 'users'" />
               </div>
               <div class="lg:w-80">
                 <ClockManager :userId="currentUser.id" />
@@ -110,10 +110,11 @@
           <!-- Working Times -->
           <WorkingTimes v-if="activeTab === 'times'" :userId="currentUser.id" />
 
-
-
           <!-- Analytics -->
           <ChartManager v-if="activeTab === 'analytics'" :userId="currentUser.id" />
+
+          <!-- Users -->
+          <UsersPage v-if="activeTab === 'users'" />
         </div>
       </div>
     </main>
@@ -128,8 +129,9 @@ import WorkingTimes from './components/WorkingTimes.vue';
 import ChartManager from './components/ChartManager.vue';
 import DashboardCharts from './components/DashboardCharts.vue';
 import MetricsCards from './components/MetricsCards.vue';
+import UsersPage from './components/UsersPage.vue';
 import Badge from './components/ui/badge.vue';
-import { Clock, BarChart3, Calendar, Timer, User as UserIcon } from 'lucide-vue-next';
+import { Clock, BarChart3, Calendar, Timer, User as UserIcon, Users } from 'lucide-vue-next';
 
 export default {
   name: 'App',
@@ -140,19 +142,21 @@ export default {
     ChartManager,
     DashboardCharts,
     MetricsCards,
+    UsersPage,
     Badge,
     Clock,
     BarChart3,
     Calendar,
     Timer,
-    UserIcon
+    UserIcon,
+    Users
   },
   setup() {
-    // User data - default user for the application
+    // User data - will be fetched from API
     const currentUser = ref({
       id: 1,
-      name: 'User',
-      email: 'user@example.com',
+      name: 'Loading...',
+      email: 'Loading...',
     });
 
     const activeTab = ref('dashboard');
@@ -182,12 +186,18 @@ export default {
             title: "Analytics",
             icon: BarChart3,
             value: "analytics"
+          },
+          {
+            title: "Users",
+            icon: Users,
+            value: "users"
           }
         ];
 
     const currentDate = computed(() => new Date().toLocaleDateString());
     const currentTime = computed(() => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     const currentTitle = computed(() => sidebarItems.find(item => item.value === activeTab.value)?.title || 'Dashboard');
+
 
     return {
       // User data

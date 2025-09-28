@@ -18,10 +18,9 @@ export function useClocks() {
       clocks.value = Array.isArray(data) ? data : [];
       return clocks.value;
     } catch (err) {
-      console.warn('API not available, using mock data:', err.message);
-      // If API fails, use mock data for development
+      console.error('Failed to fetch clocks:', err);
+      error.value = err.message;
       clocks.value = [];
-      error.value = null; // Don't show error for missing backend
       return clocks.value;
     } finally {
       loading.value = false;
@@ -30,36 +29,30 @@ export function useClocks() {
 
   // Create new clock entry (clock in/out)
   const createClock = async (userID, clockData) => {
+    console.log('=== CREATING CLOCK ===');
+    console.log('User ID:', userID);
+    console.log('Clock Data:', clockData);
+    
     loading.value = true;
     error.value = null;
     
     try {
       const data = await apiService.createClock(userID, clockData);
+      console.log('API Response:', data);
+      
       // Ensure clocks.value is an array before pushing
       if (!Array.isArray(clocks.value)) {
         clocks.value = [];
       }
       clocks.value.push(data);
       currentClock.value = data;
+      console.log('Updated clocks array:', clocks.value);
+      console.log('=== CLOCK CREATED SUCCESSFULLY ===');
       return data;
     } catch (err) {
-      console.warn('API not available, using mock data:', err.message);
-      // If API fails, create mock data for development
-      const mockData = {
-        id: Date.now(), // Use timestamp as ID
-        user_id: userID,
-        ...clockData,
-        created_at: new Date().toISOString()
-      };
-      
-      // Ensure clocks.value is an array before pushing
-      if (!Array.isArray(clocks.value)) {
-        clocks.value = [];
-      }
-      clocks.value.push(mockData);
-      currentClock.value = mockData;
-      error.value = null; // Don't show error for missing backend
-      return mockData;
+      console.error('Failed to create clock:', err);
+      error.value = err.message;
+      throw err;
     } finally {
       loading.value = false;
     }

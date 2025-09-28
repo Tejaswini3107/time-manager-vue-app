@@ -4,7 +4,12 @@ const app = express();
 const PORT = 3001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'http://localhost:3005'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 
 // In-memory data storage (for development)
@@ -31,8 +36,8 @@ let workingTimes = [
 let users = [
   {
     id: 1,
-    name: 'User',
-    email: 'user@example.com',
+    name: 'General Manager',
+    email: 'manager@company.com',
     created_at: new Date().toISOString()
   }
 ];
@@ -86,6 +91,38 @@ app.get('/api/workingtimes', (req, res) => {
 });
 
 app.post('/api/workingtimes', (req, res) => {
+  console.log('=== WORKING TIME POST REQUEST ===');
+  console.log('Request body:', req.body);
+  console.log('User ID:', req.body.user_id);
+  console.log('Start:', req.body.start);
+  console.log('End:', req.body.end);
+  
+  // Validate required fields
+  if (!req.body.start || !req.body.end) {
+    console.log('Validation failed: Missing start or end time');
+    return res.status(400).json({ error: 'Start and end times are required' });
+  }
+  
+  // Validate date format
+  const startDate = new Date(req.body.start);
+  const endDate = new Date(req.body.end);
+  
+  console.log('Parsed start date:', startDate);
+  console.log('Parsed end date:', endDate);
+  console.log('Start date valid:', !isNaN(startDate.getTime()));
+  console.log('End date valid:', !isNaN(endDate.getTime()));
+  
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    console.log('Validation failed: Invalid date format');
+    return res.status(400).json({ error: 'Invalid date format' });
+  }
+  
+  // Validate that end time is after start time
+  if (endDate <= startDate) {
+    console.log('Validation failed: End time must be after start time');
+    return res.status(400).json({ error: 'End time must be after start time' });
+  }
+  
   const newWorkingTime = {
     id: getNextId(workingTimes),
     user_id: req.body.user_id || 1,
@@ -94,7 +131,9 @@ app.post('/api/workingtimes', (req, res) => {
     created_at: new Date().toISOString()
   };
   
+  console.log('Creating new working time:', newWorkingTime);
   workingTimes.push(newWorkingTime);
+  console.log('Working time created successfully. Total working times:', workingTimes.length);
   res.status(201).json(newWorkingTime);
 });
 
@@ -159,6 +198,16 @@ app.put('/api/users/:id', (req, res) => {
   
   users[index] = { ...users[index], ...req.body };
   res.json(users[index]);
+});
+
+app.delete('/api/users/:id', (req, res) => {
+  const initialLength = users.length;
+  users = users.filter(u => u.id != req.params.id);
+  if (users.length < initialLength) {
+    res.status(204).send(); // No Content
+  } else {
+    res.status(404).json({ error: 'User not found' });
+  }
 });
 
 // Health check endpoint

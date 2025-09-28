@@ -112,24 +112,28 @@ export default {
 
     const clock = async () => {
       try {
-        console.log('Clock operation started. Current status:', isClockedIn.value);
+        console.log('=== CLOCK OPERATION STARTED ===');
+        console.log('Current status:', isClockedIn.value);
         console.log('User ID:', props.userId);
+        console.log('Current clocks array:', clocks.value);
         
         if (isClockedIn.value) {
           console.log('Attempting to clock out...');
-          await clockOut(props.userId);
-          console.log('Clocked out successfully');
+          const result = await clockOut(props.userId);
+          console.log('Clock out result:', result);
         } else {
           console.log('Attempting to clock in...');
-          await clockIn(props.userId);
-          console.log('Clocked in successfully');
+          const result = await clockIn(props.userId);
+          console.log('Clock in result:', result);
         }
         
         // Refresh clock data after successful operation
         console.log('Refreshing clock data...');
-        await fetchClocks(props.userId);
-        console.log('Clock data refreshed. New status:', isClockedIn.value);
-        console.log('Total clocks:', clocks.value.length);
+        const refreshedData = await fetchClocks(props.userId);
+        console.log('Refreshed data:', refreshedData);
+        console.log('New status:', isClockedIn.value);
+        console.log('Total clocks after refresh:', clocks.value.length);
+        console.log('=== CLOCK OPERATION COMPLETED ===');
       } catch (err) {
         console.error('Clock operation failed:', err);
         alert(`Clock operation failed: ${err.message}`);

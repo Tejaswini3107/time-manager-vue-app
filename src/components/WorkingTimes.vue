@@ -141,16 +141,45 @@ export default {
 
     const loadWorkingTimes = async () => {
       try {
-        const data = await fetchWorkingTimes();
-        workingTimes.value = data.map(entry => ({
-          id: entry.id,
-          date: new Date(entry.start).toISOString().split('T')[0],
-          start: new Date(entry.start).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          end: new Date(entry.end).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          hours: Math.round((new Date(entry.end) - new Date(entry.start)) / (1000 * 60 * 60) * 100) / 100
-        }));
+        console.log('=== LOADING WORKING TIMES ===');
+        console.log('User ID:', props.userId);
+        console.log('Calling fetchWorkingTimes...');
+        
+        const data = await fetchWorkingTimes(props.userId);
+        console.log('Raw API data:', data);
+        console.log('Data type:', typeof data);
+        console.log('Data length:', data ? data.length : 'null/undefined');
+        
+        workingTimes.value = data.map(entry => {
+          // Validate dates before processing
+          const startDate = new Date(entry.start);
+          const endDate = new Date(entry.end);
+          
+          // Check if dates are valid
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.warn('Invalid date found in entry:', entry);
+            return {
+              id: entry.id,
+              date: 'Invalid Date',
+              start: 'Invalid Time',
+              end: 'Invalid Time',
+              hours: 0
+            };
+          }
+          
+          return {
+            id: entry.id,
+            date: startDate.toISOString().split('T')[0],
+            start: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            end: endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            hours: Math.round((endDate - startDate) / (1000 * 60 * 60) * 100) / 100
+          };
+        });
       } catch (err) {
-        console.error('Failed to load working times:', err);
+        console.error('=== FAILED TO LOAD WORKING TIMES ===');
+        console.error('Error:', err);
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
         workingTimes.value = [];
       }
     };
@@ -167,16 +196,27 @@ export default {
 
     const saveTimeEntry = async () => {
       try {
+        console.log('=== SAVING TIME ENTRY ===');
+        console.log('User ID:', props.userId);
+        console.log('Time Entry:', timeEntry.value);
+        
         // Combine date and time to create ISO datetime strings
         const startDateTime = new Date(`${timeEntry.value.date}T${timeEntry.value.startTime}`).toISOString();
         const endDateTime = new Date(`${timeEntry.value.date}T${timeEntry.value.endTime}`).toISOString();
+        
+        console.log('Start DateTime:', startDateTime);
+        console.log('End DateTime:', endDateTime);
         
         const workingTimeData = {
           start: startDateTime,
           end: endDateTime
         };
 
-        await createWorkingTime(props.userId, workingTimeData);
+        console.log('Working Time Data:', workingTimeData);
+        console.log('Calling createWorkingTime...');
+        
+        const result = await createWorkingTime(props.userId, workingTimeData);
+        console.log('Create result:', result);
         
         // Close modal and reload data
         closeModal();

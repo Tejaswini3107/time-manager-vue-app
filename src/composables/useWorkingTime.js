@@ -9,15 +9,26 @@ export function useWorkingTime() {
 
   // Get all working times for a user with optional date filters
   const fetchWorkingTimes = async (userID, filters = {}) => {
+    console.log('=== FETCHING WORKING TIMES ===');
+    console.log('User ID:', userID);
+    console.log('Filters:', filters);
+    
     loading.value = true;
     error.value = null;
     
     try {
+      console.log('Calling apiService.getWorkingTimes...');
       const data = await apiService.getWorkingTimes(userID, filters);
+      console.log('API Service returned:', data);
+      
       // Ensure workingTimes.value is always an array
       workingTimes.value = Array.isArray(data) ? data : [];
+      console.log('Set workingTimes.value to:', workingTimes.value);
       return workingTimes.value;
     } catch (err) {
+      console.error('=== API SERVICE ERROR ===');
+      console.error('Error:', err);
+      console.error('Error message:', err.message);
       error.value = err.message;
       // Set to empty array on error to prevent filter issues
       workingTimes.value = [];
@@ -46,18 +57,27 @@ export function useWorkingTime() {
 
   // Create new working time entry
   const createWorkingTime = async (userID, workingTimeData) => {
+    console.log('=== CREATING WORKING TIME ===');
+    console.log('User ID:', userID);
+    console.log('Working Time Data:', workingTimeData);
+    
     loading.value = true;
     error.value = null;
     
     try {
       const data = await apiService.createWorkingTime(userID, workingTimeData);
+      console.log('API Response:', data);
+      
       // Ensure workingTimes.value is an array before pushing
       if (!Array.isArray(workingTimes.value)) {
         workingTimes.value = [];
       }
       workingTimes.value.push(data);
+      console.log('Updated working times array:', workingTimes.value);
+      console.log('=== WORKING TIME CREATED SUCCESSFULLY ===');
       return data;
     } catch (err) {
+      console.error('Failed to create working time:', err);
       error.value = err.message;
       throw err;
     } finally {

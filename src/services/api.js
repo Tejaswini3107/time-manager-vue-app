@@ -12,23 +12,30 @@ class ApiService {
     const config = {
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         ...options.headers,
       },
-      mode: 'cors',
       ...options,
     };
 
+    console.log('=== API REQUEST ===');
+    console.log('URL:', url);
+    console.log('Config:', config);
+
     try {
       const response = await fetch(url, config);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('Response error:', errorText);
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
       }
       
-      return await response.json();
+      const data = await response.json();
+      console.log('Response data:', data);
+      console.log('=== API REQUEST SUCCESS ===');
+      return data;
     } catch (error) {
       console.error('API request failed:', error);
       throw error;
@@ -62,7 +69,7 @@ class ApiService {
   async createUser(userData) {
     return this.request('/users', {
       method: 'POST',
-      body: JSON.stringify({ user: userData }),
+      body: JSON.stringify(userData),
     });
   }
 
