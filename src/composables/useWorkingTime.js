@@ -14,10 +14,13 @@ export function useWorkingTime() {
     
     try {
       const data = await apiService.getWorkingTimes(userID, filters);
-      workingTimes.value = data;
-      return data;
+      // Ensure workingTimes.value is always an array
+      workingTimes.value = Array.isArray(data) ? data : [];
+      return workingTimes.value;
     } catch (err) {
       error.value = err.message;
+      // Set to empty array on error to prevent filter issues
+      workingTimes.value = [];
       throw err;
     } finally {
       loading.value = false;
@@ -48,6 +51,10 @@ export function useWorkingTime() {
     
     try {
       const data = await apiService.createWorkingTime(userID, workingTimeData);
+      // Ensure workingTimes.value is an array before pushing
+      if (!Array.isArray(workingTimes.value)) {
+        workingTimes.value = [];
+      }
       workingTimes.value.push(data);
       return data;
     } catch (err) {
@@ -66,10 +73,12 @@ export function useWorkingTime() {
     try {
       const data = await apiService.updateWorkingTime(id, workingTimeData);
       
-      // Update in working times array
-      const index = workingTimes.value.findIndex(wt => wt.id === id);
-      if (index !== -1) {
-        workingTimes.value[index] = data;
+      // Ensure workingTimes.value is an array before using findIndex
+      if (Array.isArray(workingTimes.value)) {
+        const index = workingTimes.value.findIndex(wt => wt.id === id);
+        if (index !== -1) {
+          workingTimes.value[index] = data;
+        }
       }
       
       // Update current working time if it's the same
@@ -94,8 +103,10 @@ export function useWorkingTime() {
     try {
       await apiService.deleteWorkingTime(id);
       
-      // Remove from working times array
-      workingTimes.value = workingTimes.value.filter(wt => wt.id !== id);
+      // Remove from working times array (ensure it's an array first)
+      if (Array.isArray(workingTimes.value)) {
+        workingTimes.value = workingTimes.value.filter(wt => wt.id !== id);
+      }
       
       // Clear current working time if it's the same
       if (currentWorkingTime.value && currentWorkingTime.value.id === id) {
@@ -112,11 +123,13 @@ export function useWorkingTime() {
   };
 
   // Computed properties
-  const hasWorkingTimes = computed(() => workingTimes.value.length > 0);
+  const hasWorkingTimes = computed(() => Array.isArray(workingTimes.value) && workingTimes.value.length > 0);
   const hasCurrentWorkingTime = computed(() => currentWorkingTime.value !== null);
   
   // Calculate total hours for current period
   const totalHours = computed(() => {
+    if (!Array.isArray(workingTimes.value)) return 0;
+    
     return workingTimes.value.reduce((total, wt) => {
       const start = new Date(wt.start);
       const end = new Date(wt.end);
@@ -127,6 +140,8 @@ export function useWorkingTime() {
 
   // Get working times for current week
   const currentWeekWorkingTimes = computed(() => {
+    if (!Array.isArray(workingTimes.value)) return [];
+    
     const now = new Date();
     const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
     const endOfWeek = new Date(now.setDate(now.getDate() - now.getDay() + 6));

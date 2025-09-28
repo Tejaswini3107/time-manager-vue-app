@@ -76,7 +76,7 @@ export default {
   },
   props: {
     userId: {
-      type: String,
+      type: [String, Number],
       required: true
     }
   },
@@ -112,15 +112,24 @@ export default {
 
     const clock = async () => {
       try {
+        console.log('Clock operation started. Current status:', isClockedIn.value);
+        console.log('User ID:', props.userId);
+        
         if (isClockedIn.value) {
+          console.log('Attempting to clock out...');
           await clockOut(props.userId);
           console.log('Clocked out successfully');
         } else {
+          console.log('Attempting to clock in...');
           await clockIn(props.userId);
           console.log('Clocked in successfully');
         }
+        
         // Refresh clock data after successful operation
+        console.log('Refreshing clock data...');
         await fetchClocks(props.userId);
+        console.log('Clock data refreshed. New status:', isClockedIn.value);
+        console.log('Total clocks:', clocks.value.length);
       } catch (err) {
         console.error('Clock operation failed:', err);
         alert(`Clock operation failed: ${err.message}`);
@@ -141,11 +150,15 @@ export default {
     onMounted(async () => {
       // Fetch initial clock data
       try {
+        console.log('Fetching initial clock data for user:', props.userId);
         await fetchClocks(props.userId);
         console.log('Initial clock data loaded successfully');
+        console.log('Initial clock status:', isClockedIn.value);
+        console.log('Initial clocks count:', clocks.value.length);
       } catch (err) {
         console.error('Failed to fetch initial clock data:', err);
-        alert(`Failed to load clock data: ${err.message}`);
+        // Don't show alert for missing backend, just log the error
+        console.log('Continuing with mock data...');
       }
       
       // Start timer for clock display

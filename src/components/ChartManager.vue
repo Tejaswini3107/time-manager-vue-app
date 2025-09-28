@@ -160,7 +160,7 @@ export default {
   },
   props: {
     userId: {
-      type: String,
+      type: [String, Number],
       required: true
     }
   },
